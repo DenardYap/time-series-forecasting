@@ -1,0 +1,22 @@
+TODO WEEK 4:
+
+1. Try adding random noise as an independent feature to LSTM
+2. Implement train val test lines function
+3. Add random state and Try hyperparameter tuning
+4. Try different prediction lengths
+5. Try different granularity
+6. Try differnet Informer and Autoformer
+7. Try differetn patch sizes
+8. Find different datasets of multiple households
+
+9. LSTM with all feature with refeeding
+10. LSTM with Higher window size
+<!-- 3. Transfomer with no refeeding -->
+11. Transformer with refeeding
+12. Transformer with refeeding with all feature
+13. Transformer with refeeding with higher window
+14. Compute differences between the MSE for 1 step ahead, 2 step, 3 step ahead
+
+15. Organize the functions
+
+- Differences between MSE for refeeding and no refeeding
