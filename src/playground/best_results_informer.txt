@@ -1,0 +1,2 @@
+Best training loss is -1.138057873249054 at Epoch 9, with lr:0.000932442243052394         wd:0.0001810644155930862 el:8 dl:8 d:128
+Best validation loss is -0.14727370768785478 at Epoch 4, with lr:2.2161841838745374e-05         wd:0.0013259197831243944 el:4 dl:16 d:64
