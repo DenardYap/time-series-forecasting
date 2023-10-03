@@ -1,6 +1,7 @@
 import numpy as np
 
-def CRPS(forecast, observed):
+def CRPS(observed, forecast):
+    
     # Sort the forecast and observed values
     forecast_sorted = np.sort(forecast)
     observed_sorted = np.sort(observed)

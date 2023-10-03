@@ -1,15 +1,17 @@
-import numpy as np
+def max_subset_sum_less_than_or_equal_to_Y(X, Y):
+    n = len(X)
+    # Create a table to store the maximum subset sum for each possible sum up to Y
+    dp = [0] * (Y + 1)
 
-# Your array
+    for i in range(n):
+        for j in range(Y, 0, -1):
+            if X[i] <= j:
+                dp[j] = max(dp[j], dp[j - X[i]] + X[i])
+        print(dp)
+    return dp[Y]
 
-a = np.array([1, 2, 3, 4, 5])
-b = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-print(a.shape, b.shape)
-
-print(a[:,np.newaxis].shape)
-
-print(a * b[:, np.newaxis])
-
-
-# 10 = dimension
-# 5 = class 
+# Example usage:
+X = [2, 3, 7, 11]
+Y = 30
+result = max_subset_sum_less_than_or_equal_to_Y(X, Y)
+print("Maximum subset sum less than or equal to", Y, "is:", result)

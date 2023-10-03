@@ -1,7 +1,0 @@
-delhi_climate.csv
-This file contains weather data collected in the city of Delhi from the period of 4 years (from 2013 to 2017).
-It can be used for the purpose of training. This is purely academic dataset and is developed as a part of
-Data Analytics course of 2019 at PES University, Bangalore.
-
-household_power_consumption.txt
-Measurements of electric power consumption in one household with a one-minute sampling rate over a period of almost 4 years. Different electrical quantities and some sub-metering values are available.
