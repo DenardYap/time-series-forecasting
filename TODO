@@ -1,6 +1,8 @@
 TODO WEEK 5:
 
-0. Teacher-forcing on transformers and find out if it's actually doign that
+<!-- 0. Teacher-forcing on transformers and find out if it's actually doign that -->
+
+0. Transformer try to predict the whole time-series with 1 patch and decide the windowsize for that
 <!-- 1. See if LSTM also has lower validation loss -->
 1. Validate both transformers and LSTM with CRPS and see which one is better
 <!-- 3. Try out Autoformer and informer and see if it's better -->

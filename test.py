@@ -1,17 +1,21 @@
-def max_subset_sum_less_than_or_equal_to_Y(X, Y):
-    n = len(X)
-    # Create a table to store the maximum subset sum for each possible sum up to Y
-    dp = [0] * (Y + 1)
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler
 
-    for i in range(n):
-        for j in range(Y, 0, -1):
-            if X[i] <= j:
-                dp[j] = max(dp[j], dp[j - X[i]] + X[i])
-        print(dp)
-    return dp[Y]
 
-# Example usage:
-X = [2, 3, 7, 11]
-Y = 30
-result = max_subset_sum_less_than_or_equal_to_Y(X, Y)
-print("Maximum subset sum less than or equal to", Y, "is:", result)
+a = np.array([1, 2, 3, 4, 5, 6, 7, 8]).reshape(-1, 1)
+s = MinMaxScaler()
+
+b = s.fit_transform(a)
+# print(b)
+# c = s.inverse_transform(b).reshape(-1)
+# print(c)
+
+# for i in range(0, len(b) - 2, 2):
+#     # print(b[i:i+2])
+#     b[i:i+2] = s.inverse_transform(b[i:i+2])
+    
+# print(b)
+
+# print(s.inverse_transform(b[2].reshape(-1, 1)).reshape(-1))
+b[2:99] = s.inverse_transform(s.inverse_transform(b[2:99]))
+print(b)
