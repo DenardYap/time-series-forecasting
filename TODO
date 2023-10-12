@@ -1,15 +1,23 @@
 TODO WEEK 5:
 
+<!-- 0. Try jensen shannon -->
+
+<!-- 1. Try L1 for the difference between the forecast and prediction and then plot -->
+<!-- 2. Find mu and cov for each prediction in group (of 10), then compte the difference between the mu and cov
+   between the true and pred
+   find out the kl divergence between them -->
+
+3. Move things to the cloud
 <!-- 0. Teacher-forcing on transformers and find out if it's actually doign that -->
 
-0. Transformer try to predict the whole time-series with 1 patch and decide the windowsize for that
+4. Transformer try to predict the whole time-series with 1 patch and decide the windowsize for that
 <!-- 1. See if LSTM also has lower validation loss -->
-1. Validate both transformers and LSTM with CRPS and see which one is better
+5. Validate both transformers and LSTM with CRPS and see which one is better
 <!-- 3. Try out Autoformer and informer and see if it's better -->
-2. See if you can train with other metrics like CRPS or KL Div
+6. See if you can train with other metrics like CRPS or KL Div
 <!-- 4. Figure out how to deal with empty values (0.0) for some of the columns -->
-3. Implement early stopping
-4. Maybe implement the teacher forcing starting with only 1 patch
+7. Implement early stopping
+8. Maybe implement the teacher forcing starting with only 1 patch
       <!-- 0. Read up all the divergence thing -->
       <!-- 1. Read up CRPS -->
    <!-- 6. use CRPS for validation, see if I can change the loss function to someting similar -->
@@ -19,18 +27,18 @@ TODO WEEK 5:
    <!-- 3. Add random state and Try hyperparameter tuning X -->
    <!-- 6. Try differnet Informer and Autoformer X -->
    <!-- 4. Try different prediction lengths  -->
-5. Try different granularity
-6. Try differetn patch sizes
+9. Try different granularity
+10. Try differetn patch sizes
 <!-- 8. Find different datasets of multiple households -->
 
-7. LSTM with all feature with refeeding
-8. LSTM with Higher window size
-   <!-- 3. Transfomer with no refeeding -->
-   <!-- 11. Transformer with refeeding -->
-9. Transformer with refeeding with all feature
-10. Transformer with refeeding with higher or smaller window
-11. Compute differences between the MSE for 1 step ahead, 2 step, 3 step ahead
+11. LSTM with all feature with refeeding
+12. LSTM with Higher window size
+    <!-- 3. Transfomer with no refeeding -->
+    <!-- 11. Transformer with refeeding -->
+13. Transformer with refeeding with all feature
+14. Transformer with refeeding with higher or smaller window
+15. Compute differences between the MSE for 1 step ahead, 2 step, 3 step ahead
 
-12. Organize the functions
+16. Organize the functions
 
 - Differences between MSE for refeeding and no refeeding
