@@ -19,13 +19,22 @@ def CRPS(observed, forecast):
 
 def js_div_(observed, forecast):
     
+    # 970 -> test / validation -> window size 7 
     observed = observed.reshape(-1)
     forecast = forecast.reshape(-1)
     # Not sure if I converted the disitrbution in a correct way
     sum_a = sum(observed)
+    # [1, 2, 3, -1, 4, 5]  # take min 
+    # Take the min into considerations
     a_normalized = [max(0, x / sum_a) for x in observed]
-    sum_b = sum(forecast)
+    sum_b = sum(forecast) 
     b_normalized = [max(0, x / sum_b) for x in forecast]
+    
+    # Make (shift) all the values to >= 0 
+    # KDE distribution 
+    # Non-parametric distribution estimates 
+    # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gaussian_kde.html
+     
     return jensenshannon(a_normalized, b_normalized)
 
 def CRPS_chatgpt(observed, forecast):
@@ -116,6 +125,14 @@ def kl_between_two_dist(A, B):
     """
     A : forecasted values for K houses and N data points, K x N matrix 
     B : Actual values for K houses and N data points, K x N matrix 
+                                                      10 x 7
+                                                      
+         t1  t2 t3 ... t7
+    h1   1   2  3  ... 7
+    h2   2   7  2  ... 8
+    ..  ..  .       .   .
+    ..  .   .   .   .   .
+    h10  10  2 8  ...  3
     """
 
     mean_A = findMeanVectors(A)
@@ -127,7 +144,7 @@ def kl_between_two_dist(A, B):
     cov_A = cov_A + np.eye(cov_A.shape[0]) * 1e-6
     cov_B = cov_B + np.eye(cov_B.shape[0]) * 1e-6
     return kl_mvn(mean_A, cov_A, mean_B, cov_B)
-    
+
 
 def l1_distances(A, B):
     res = []

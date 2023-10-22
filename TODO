@@ -7,17 +7,33 @@ TODO WEEK 5:
    between the true and pred
    find out the kl divergence between them -->
 
-3. Move things to the cloud
+1. https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gaussian_kde.html
+2. Try to find out why the KL divergence is really high
+
+- Bug in code
+- Separate into mean and cov matrices and see which one is contributing to the high loss
+
+3. Start using the aldous GPU
+   <!-- 2. Read research papers and see what metrics people used. Find another metric that's standardized. -->
+   <!-- 3. Proofread codes -->
+
+<!-- - Try different ways to extract the pdf -->
+<!-- - Look at the histogram and see if there's any udnerlyign distribution -->
+
+<!-- 2. Move things to the cloud -->
+
+<!-- 3. Restrict values to positive (doing gelu or smtg) -->
+<!-- 4. Dig into how to modify the loss functions of informer -->
 <!-- 0. Teacher-forcing on transformers and find out if it's actually doign that -->
 
-4. Transformer try to predict the whole time-series with 1 patch and decide the windowsize for that
+5. Transformer try to predict the whole time-series with 1 patch and decide the windowsize for that
 <!-- 1. See if LSTM also has lower validation loss -->
-5. Validate both transformers and LSTM with CRPS and see which one is better
+6. Validate both transformers and LSTM with CRPS and see which one is better
 <!-- 3. Try out Autoformer and informer and see if it's better -->
-6. See if you can train with other metrics like CRPS or KL Div
+7. See if you can train with other metrics like CRPS or KL Div
 <!-- 4. Figure out how to deal with empty values (0.0) for some of the columns -->
-7. Implement early stopping
-8. Maybe implement the teacher forcing starting with only 1 patch
+8. Implement early stopping
+9. Maybe implement the teacher forcing starting with only 1 patch
       <!-- 0. Read up all the divergence thing -->
       <!-- 1. Read up CRPS -->
    <!-- 6. use CRPS for validation, see if I can change the loss function to someting similar -->
@@ -27,18 +43,18 @@ TODO WEEK 5:
    <!-- 3. Add random state and Try hyperparameter tuning X -->
    <!-- 6. Try differnet Informer and Autoformer X -->
    <!-- 4. Try different prediction lengths  -->
-9. Try different granularity
-10. Try differetn patch sizes
+10. Try different granularity
+11. Try differetn patch sizes
 <!-- 8. Find different datasets of multiple households -->
 
-11. LSTM with all feature with refeeding
-12. LSTM with Higher window size
+12. LSTM with all feature with refeeding
+13. LSTM with Higher window size
     <!-- 3. Transfomer with no refeeding -->
     <!-- 11. Transformer with refeeding -->
-13. Transformer with refeeding with all feature
-14. Transformer with refeeding with higher or smaller window
-15. Compute differences between the MSE for 1 step ahead, 2 step, 3 step ahead
+14. Transformer with refeeding with all feature
+15. Transformer with refeeding with higher or smaller window
+16. Compute differences between the MSE for 1 step ahead, 2 step, 3 step ahead
 
-16. Organize the functions
+17. Organize the functions
 
 - Differences between MSE for refeeding and no refeeding
