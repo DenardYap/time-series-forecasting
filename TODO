@@ -1,4 +1,22 @@
-TODO WEEK 5:
+WEEK 7 UPDATE:
+
+1. Got aldous to working and started training. Wasn't able to use too big of a hyperparameter since
+   that doesn't fit into memory
+
+1. https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gaussian_kde.html
+
+<!-- Remove the outliers -->
+
+Train the new model with no outliers - 2 hours?
+Separate the mean and apply the KL formula (only look at the covariance terms) - 30 mins
+Try l-infinity - 30 mins
+
+<!-- 1. Separate into mean and cov matrices and see which one is contributing to the high loss
+1. Redo separation code -->
+   <!-- - Is there a way where I can disconnect and the script keeps running? -->
+   <!-- - Is this GPU shared across all people? -->
+
+-
 
 <!-- 0. Try jensen shannon -->
 
@@ -7,13 +25,12 @@ TODO WEEK 5:
    between the true and pred
    find out the kl divergence between them -->
 
-1. https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gaussian_kde.html
-2. Try to find out why the KL divergence is really high
+<!-- 2. Try to find out why the KL divergence is really high -->
 
-- Bug in code
-- Separate into mean and cov matrices and see which one is contributing to the high loss
+<!-- - Bug in code -->
 
-3. Start using the aldous GPU
+<!-- 3. Start using the aldous GPU -->
+
    <!-- 2. Read research papers and see what metrics people used. Find another metric that's standardized. -->
    <!-- 3. Proofread codes -->
 

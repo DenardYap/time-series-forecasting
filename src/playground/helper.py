@@ -105,7 +105,7 @@ def findCovMatrix(A):
     return np.cov(A, rowvar=False) 
 
 def kl_mvn(m_to, S_to, m_fr, S_fr):
-    """Calculate `KL(to||fr)`, where `to` and `fr` are pairs of means and covariance matrices"""
+    """Calculate `KL((m_to, S_to)||(m_fr, S_fr))`"""
     
     d = m_fr - m_to
     
@@ -126,19 +126,14 @@ def kl_between_two_dist(A, B):
     A : forecasted values for K houses and N data points, K x N matrix 
     B : Actual values for K houses and N data points, K x N matrix 
                                                       10 x 7
-                                                      
-         t1  t2 t3 ... t7
-    h1   1   2  3  ... 7
-    h2   2   7  2  ... 8
-    ..  ..  .       .   .
-    ..  .   .   .   .   .
-    h10  10  2 8  ...  3
+           
     """
-
     mean_A = findMeanVectors(A)
     cov_A = findCovMatrix(A)
 
     mean_B = findMeanVectors(B)
+    
+    print(sum(mean_A - mean_B))
     cov_B = findCovMatrix(B)
     # Ensure that the covariance matrices are positive definite
     cov_A = cov_A + np.eye(cov_A.shape[0]) * 1e-6

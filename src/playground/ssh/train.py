@@ -16,9 +16,9 @@ total_start = time.time()
 
 """
 TODO:
-0. Find out bugs in the code if there's any
-1. Figure out how to leverage GPU
-2. Time it 
+# 0. Find out bugs in the code if there's any
+# 1. Figure out how to leverage GPU
+# 2. Time it 
 
 """
 df_days = pd.read_csv("electric_day.txt", sep=';')
@@ -26,7 +26,7 @@ print("Length of dataset", len(df_days))
 # Replace all 0.0s with NaN, this is needed for the observed mask that will be passed into the transformer
 df_days = df_days.replace(0.0, np.nan)
 df_scaled = df_days
-print(df_scaled)
+
 # Minmax scale each house independently
 print("Min max scaling data...")
 scaler_map = scaleDf(df_scaled)
@@ -219,7 +219,7 @@ best_train_loss  = float("infinity")
 
 best_val_lr = None
 best_val_weight_decay = None
-best_val_el = None
+best_val_el = None  
 best_val_dl = None
 best_val_d = None
 best_val_epoch = None
