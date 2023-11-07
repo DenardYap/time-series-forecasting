@@ -11,7 +11,7 @@ from accelerate import Accelerator
 from torch.optim import AdamW
 import torch.optim.lr_scheduler as lr_scheduler
 from evaluate import load
-from gluonts.time_feature import get_seasonality
+from gluonts.time_feature import get_seasonality 
 from IPython.display import clear_output
 import os 
 import torch
@@ -44,7 +44,7 @@ from gluonts.transform import (
 from transformers import PretrainedConfig
 import pandas as pd
 import numpy as np
-from helper import scaleDf, dataSplit, train, linf_distances, getParameterPairs, create_dataloader, create_val_dataloader, create_test_dataloader
+from helper import scaleDf, dataSplitSeparate, dataSplitSeparateTestVal, train, getParameterPairs, create_dataloader, create_val_dataloader, create_test_dataloader
 from gluonts.dataset.common import ListDataset
 from gluonts.dataset.field_names import FieldName
 from gluonts.time_feature import get_lags_for_frequency
@@ -58,24 +58,32 @@ import time
 
 total_start = time.time()
 
-df_days = pd.read_csv("electric_day.txt", sep=';')
-print("Length of dataset", len(df_days))
-# Replace all 0.0s with NaN, this is needed for the observed mask that will be passed into the transformer
-df_days = df_days.replace(0.0, np.nan)
-df_scaled = df_days
+df_train = pd.read_csv("electric_train.txt", sep=';')
+df_test = pd.read_csv("electric_test.txt", sep=';')
+df_val = pd.read_csv("electric_val.txt", sep=';')
+print(len(df_test))
+df_test = df_test.iloc[365:]
+print(len(df_test))
+df_train = df_train.replace(0.0, np.nan)
+df_test = df_test.replace(0.0, np.nan)
+df_val = df_train.replace(0.0, np.nan)
 
 # Minmax scale each house independently
 print("Min max scaling data...")
-scaler_map = scaleDf(df_scaled)
-num_of_datapoints = len(df_scaled)
-train_size = int(num_of_datapoints * 0.5)
-val_size = int(0.75 * num_of_datapoints) - train_size
-prediction_length = 14 # 7 days 
+train_scaler_map = scaleDf(df_train)
+test_scaler_map = scaleDf(df_test)
+val_scaler_map = scaleDf(df_val)
+# prediction_length = 14  
+# prediction_length = 28 # 4 weeks
+# prediction_length = 42 # 6 weeks  
+prediction_length = 56 # 8 weeks  
 freq = "1D" # set frequency to 1 day
 
 print("Splitting data into train, val, test...")
-train_dataset, val_dataset, test_dataset = dataSplit(df_scaled, freq, prediction_length)
-
+train_dataset = dataSplitSeparate(df_train, freq, prediction_length)
+# test_dataset, offset_map, ground_truth = dataSplitSeparateTestVal(df_test, freq, prediction_length)
+test_dataset = dataSplitSeparate(df_test, freq, prediction_length)
+val_dataset = dataSplitSeparate(df_val, freq, prediction_length)
 # The look back window, in this case how many days we consider 
 # lags_sequence = get_lags_for_frequency(freq)
 lags_sequence = get_lags_for_frequency(freq)[:19]
@@ -169,22 +177,23 @@ def getInformerConfig(encoder_layers, decoder_layers, d_model):
     
     return config
 
-BEST_EPOCH = 16
-BEST_LR = 0.005072230849104142 
-BEST_WD = 0.0001606068957768057
+# BEST_EPOCH = 28 # for 14 
+# BEST_EPOCH = 35 # for 28
+BEST_EPOCH = 43 # for 42
+BEST_LR = 0.005 
+BEST_WD = 0.0001
 BEST_EL = 16
 BEST_DL = 4
 BEST_DIMENSION = 32
 
-informer_path = f"weights/electric/14/informer/{BEST_LR}-{BEST_WD}-{BEST_EL}-{BEST_DL}-{BEST_DIMENSION}/state/{str(BEST_EPOCH)}"
+informer_path = f"weights/electric/{str(prediction_length)}/separate/informer/{str(BEST_LR)}-{str(BEST_WD)}-{str(BEST_EL)}-{str(BEST_DL)}-{str(BEST_DIMENSION)}/state/{str(BEST_EPOCH)}"
 informer_model = InformerForPrediction(getInformerConfig(BEST_EL, BEST_DL, BEST_DIMENSION))
-informer_model.load_state_dict(torch.load(informer_path))
+print("CUDA IS AVAILABLE?:", torch.cuda.is_available())
+informer_model.load_state_dict(torch.load(informer_path, map_location=torch.device('cpu')))
 informer_model.eval()
-
 
 def evaluate(model, data_loader):
     model.eval()
-    
 
     forecasts = []
     for batch in data_loader:
@@ -207,30 +216,43 @@ def evaluate(model, data_loader):
 informer_forecasts = evaluate(informer_model, test_dataloader)
 
 # Inverse scale the df back to its original values 
-df_scaled_no_nan = deepcopy(df_scaled)
+df_scaled_no_nan = deepcopy(df_test)
 i = 0
 for column_name in df_scaled_no_nan.columns:
     if column_name[0] != "M":
         continue
     curSeries = df_scaled_no_nan[column_name].values.reshape(-1, 1)
-    df_scaled_no_nan[column_name] = scaler_map[i].inverse_transform(curSeries)
+    df_scaled_no_nan[column_name] = test_scaler_map[i].inverse_transform(curSeries)
     i += 1
 df_scaled_no_nan = df_scaled_no_nan.fillna(0)
-
+NUM_OF_HOUSES = 106 
+# OFFSET = 365
+OFFSET = 365
 # We also need to inverse scale the forecasts
+# def scale_independently(forecasts, ctx_length):
+
+#     # Offset map is a list of lists, where offset_map[i] tells your 
+#     # how many entries of house i is not empty 
+#     j = 0
+#     for k in range(NUM_OF_HOUSES):
+        
+#         curScaler = test_scaler_map[k] 
+#         for i in range(0, OFFSET, OFFSET - ctx_length):
+#             forecasts[i + j] = curScaler.inverse_transform(forecasts[i + j].reshape(-1, 1)).reshape(-1)
+#             j += 1
 def scale_independently(forecasts, offset):
     
     for i in range(0, len(forecasts), offset):
-        curScaler = scaler_map[i // offset] 
+        curScaler = test_scaler_map[i // offset] 
         for j in range(offset):
             # print(curScaler.inverse_transform(forecasts[i + j].reshape(-1, 1)).reshape(-1))
             forecasts[i + j] = curScaler.inverse_transform(forecasts[i + j].reshape(-1, 1)).reshape(-1)
             # curList.append(np.array(vanilla_forecasts[i + j][0]))
-        
+            
+            
 informer_forecasts_ev = deepcopy(informer_forecasts)
-test_size = len(df_days) - (train_size +  val_size)
-offset = test_size - prediction_length * 4
-scale_independently(informer_forecasts_ev, offset)
+scale_independently(informer_forecasts_ev, len(df_test) - prediction_length * 4)
+
 informer_forecasts_ev[np.isnan(informer_forecasts_ev)] = 0
 
 # Transform test dataset's nan values to 0
@@ -246,7 +268,33 @@ from helper import kl_between_two_dist
 
 # TODO: Might have a bug here
 print("Calcualting multivariate KL divergence between forecasted values and observed values...")
-NUM_OF_HOUSES = 370
+# def getForecastsAndObserved(forecasts):
+#     A = []
+#     B = []  
+#     k = 0 
+#     offset = 0
+#     offset_gt = 0
+#     for k in range(NUM_OF_HOUSES):
+#         numOfTimepoints = len(forecasts) - OFFSET
+#         curListA = []
+#         curListB = [] 
+#         for i in range(numOfTimepoints - prediction_length * 5):
+#             curListA.append(np.array(ground_truth[offset_gt + i]))       
+#             curListB.append(np.array(forecasts[offset + i][0]))
+
+#             # 14
+#         # 106 
+#         # 125 - 28 
+        
+#         offset_gt += offset_map[k] - prediction_length * 5 
+#         offset += offset_map[k] - prediction_length * 4 
+#         A.append(np.array(curListA))   
+#         print(A[-1].shape)
+#         B.append(np.array(curListB))        
+#         print(B[-1].shape)
+
+#     return A, B
+
 def getForecastsAndObserved(forecasts):
     A = []
     B = []
@@ -254,7 +302,7 @@ def getForecastsAndObserved(forecasts):
         curList = [] 
         if column_name[0] != "M":
             continue
-        cur_df = df_scaled_no_nan[column_name][train_size + val_size + prediction_length * 4:]
+        cur_df = df_scaled_no_nan[column_name][prediction_length * 4:]
         for i in range(len(cur_df) - prediction_length):
             curList.append(np.array(cur_df[i : i + prediction_length]))        
         A.append(np.array(curList))
@@ -271,12 +319,14 @@ def getForecastsAndObserved(forecasts):
     return A, B
 # Calculate the KL divergences between these two Multivariate gaussian distribution 
 # for every single forecasts (97 forecasts)
-   
+
+# A = [[1, 2, 3], [1, 2, 3, 4, 5], [1, 2]]
+
 def plotKL_Div_between_A_and_B(A, B, save_name, title):
     KL_div_list = [] 
 
     # Calcualte the KL div between all 97 forecast points and observed points
-    for i in range(A.shape[1]):
+    for i in range(len(A)):
         KL_div_list.append(kl_between_two_dist(A[:, i, :], B[:, i, :]))
         
     plt.figure(figsize=(5, 5))
@@ -287,7 +337,7 @@ def plotKL_Div_between_A_and_B(A, B, save_name, title):
     return KL_div_list
 
 informerA, informerB = getForecastsAndObserved(informer_forecasts_ev)
-informer_KL_div_list = plotKL_Div_between_A_and_B(informerA, informerB, "kl_divergence.png", "KL divergence (separating mean)")
+informer_KL_div_list = plotKL_Div_between_A_and_B(informerA, informerB, "kl_divergence_separate.png", "KL divergence for each forecasts (Informer)")
 from helper import l1_distances, l1_distances_mean
 
 def get_l1_distances_list(A, B):
@@ -300,7 +350,7 @@ def get_l1_distances_list(A, B):
     plt.figure(figsize=(16, 8))
     plt.title("l1 distances")
     plt.plot(l1_distances_list)
-    plt.savefig("l1_distances.png")
+    plt.savefig("l1_distances_separate.png")
     return l1_distances_list
 
 def get_l1_distances_mean_list(A, B):
@@ -308,37 +358,21 @@ def get_l1_distances_mean_list(A, B):
     for i in range(A.shape[1]):
         l1_distances_mean_list.append(l1_distances_mean(A[:, i, :], B[:, i, :]))
     plt.figure(figsize=(16, 8))
-    plt.title("l1 distances mean per 10 houses")
+    plt.title("l1 distances mean per " + str(NUM_OF_HOUSES) + " houses")
     plt.plot(l1_distances_mean_list)
-    plt.savefig("l1_distances_mean.png")
+    plt.savefig("l1_distances_mean_separate.png")
     return l1_distances_mean_list
-
-
-def get_linf_distances_list(A, B):
-    linf_distances_list = []  # 970
-
-    # Calcualte the KL div between all 97 forecast points and observed points
-    for i in range(A.shape[1]):
-        linf_distances_list.extend(linf_distances(A[:, i, :], B[:, i, :]))
-        
-    plt.figure(figsize=(16, 8))
-    plt.title("linf distances")
-    plt.plot(linf_distances_list)
-    plt.savefig("linf_distances.png")
-    return linf_distances_list
-
 l1dlinf = get_l1_distances_list(informerA, informerB)
 l1dlinfm = get_l1_distances_mean_list(informerA, informerB)
-l1infd_inf = get_linf_distances_list(informerA, informerB)
 
 print("scale_dataset...")
 def scale_dataset(dataset):
-    offset = len(dataset) // 10
-    print(offset)
+    offset = len(dataset) // NUM_OF_HOUSES
     for i in range(0, len(dataset), offset):
-        curScaler = scaler_map[i // offset] 
+        curScaler = test_scaler_map[i // offset] 
         for j in range(offset):
             dataset[i + j]["target"] = np.array(curScaler.inverse_transform(dataset[i + j]["target"].reshape(-1, 1)).reshape(-1))
+            
 test_dataset_ev = deepcopy(test_dataset)
 scale_dataset(test_dataset_ev)
 for i in range(len(test_dataset_ev)):
@@ -387,15 +421,15 @@ def calculate(forecasts, dataset):
 print("Getting scores...")
 mse_metrics4, mase_metrics4, smape_metrics4, crps_metrics4  = calculate(informer_forecasts_ev, test_dataset_ev)  
 
-with open("informer_scores.txt", "a") as f:
+with open("informer_scores_separate.txt", "a") as f:
      
-    f.write(f"Informer Test MSE: {np.mean(mse_metrics4)}")
-    f.write("===============================================")
-    f.write(f"Informer Test MASE: {np.mean(mase_metrics4)}")
-    f.write("===============================================")
-    f.write(f"Informer Test sMAPE: {np.mean(smape_metrics4)}")
-    f.write("===============================================")
-    f.write(f"Informer Test crps: {np.mean(crps_metrics4)}")  
+    f.write(f"Informer Test MSE: {np.mean(mse_metrics4)}\n")
+    f.write("===============================================\n")
+    f.write(f"Informer Test MASE: {np.mean(mase_metrics4)}\n")
+    f.write("===============================================\n")
+    f.write(f"Informer Test sMAPE: {np.mean(smape_metrics4)}\n")
+    f.write("===============================================\n")
+    f.write(f"Informer Test crps: {np.mean(crps_metrics4)}\n")  
 import matplotlib.dates as mdates
 import random 
 test_dataset_ev = np.array(test_dataset_ev)
@@ -434,9 +468,9 @@ def plot(ts_index, forecasts, save = False):
         label="+/- 1-std",
     )
     if save:
-        if not os.path.exists("graph/electric/14/informer/"):
-            os.makedirs("graph/electric/14/informer/")
-        plt.savefig("graph/electric/14/informer/" + str(ts_index) + "-" + str(int(ts_index) + prediction_length) + ".png")
+        if not os.path.exists(f"graph/electric/{str(prediction_length)}/separate/informer2/"):
+            os.makedirs(f"graph/electric/{str(prediction_length)}/separate/informer2/")
+        plt.savefig(f"graph/electric/{str(prediction_length)}/separate/informer2/" + str(ts_index) + "-" + str(int(ts_index) + prediction_length) + ".png")
     plt.legend()
     plt.show()
 

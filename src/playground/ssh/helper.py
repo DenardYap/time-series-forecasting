@@ -163,7 +163,8 @@ def kl_mvn(m_to, S_to, m_fr, S_fr):
     term1 = np.trace(solve(S_to))
     term2 = logdet(S_fr) - logdet(S_to)
     term3 = d.T @ solve(d)
-    return (term1 + term2 + term3 - len(d))/2.
+    # return (term1 + term2 + term3 - len(d))/2.
+    return (term1 + term2 - len(d))/2.
 
 def kl_between_two_dist(A, B):
     """
@@ -180,9 +181,11 @@ def kl_between_two_dist(A, B):
     cov_B = findCovMatrix(B)
     with open("mean_differences.txt", "a") as f:
         f.write(str(sum(mean_A - mean_B)) +"\n")
+        
     # Ensure that the covariance matrices are positive definite
     cov_A = cov_A + np.eye(cov_A.shape[0]) * 1e-6
     cov_B = cov_B + np.eye(cov_B.shape[0]) * 1e-6
+    
     return kl_mvn(mean_A, cov_A, mean_B, cov_B)
 
 
@@ -198,7 +201,14 @@ def l1_distances_mean(A, B):
     for i in range(A.shape[0]):
         res.append(np.linalg.norm((A[i] - B[i]), ord=1))
     return np.mean(res) 
-        
+
+def linf_distances(A, B):
+    
+    res = []
+    for i in range(A.shape[0]):
+        res.append(np.linalg.norm((A[i] - B[i]), ord=np.inf))
+    
+    return res 
 
 def scaleDf(df):
     scaler_map = {}
@@ -302,6 +312,158 @@ def dataSplit(df, freq, prediction_length):
             freq=freq,
         ))
     return np.array(train_ds), np.array(val_ds), np.array(test_ds)
+
+
+
+def dataSplitSeparate(df, freq, prediction_length):
+    ds = []
+    def getTarget(patch, stride, data_list):
+        
+        target = []
+        for i in range(patch, len(data_list), stride):
+            target.append(data_list[i-patch:i])
+        # Convert to numpy array
+        target = np.array(target)
+        # Reshaping the input to (n_samples, time_steps, n_feature)
+        # target = np.reshape(target, (target.shape[0], target.shape[1], n_cols))
+        return target
+    for column_name in df.columns:
+        if column_name[0] != "M":
+            continue
+        
+        data = df[column_name]
+        
+        data = np.array(data)
+        data = data.reshape(data.shape[0])
+        # target, feat_dynamic_real, feat_static_cat = data_out
+        # TODO: why is the start date not changing? MIGHT NEED TO FIX
+        target = getTarget(prediction_length * 4, 1, data)
+        feat_static_cat = [i for i in range(len(target))]
+        start =  [pd.Period("01-01-2011", freq=freq) for _ in range(len(target))]
+        ds.extend(ListDataset(
+            [
+                {
+                    FieldName.TARGET: target,
+                    FieldName.START: start,
+                    FieldName.FEAT_STATIC_CAT: [fsc],
+                }
+                for (target, start, fsc) in zip(
+                    target[:, :-prediction_length],
+                    start,
+                    feat_static_cat,
+                )
+            ],
+            freq=freq,
+        ))
+
+    return np.array(ds)
+
+
+
+def dataSplitSeparateTest(df, freq, prediction_length):
+    ds = []
+    def getTarget(patch, stride, data_list):
+        
+        target = []
+        for i in range(patch, len(data_list), stride):
+            target.append(data_list[i-patch:i])
+        # Convert to numpy array
+        target = np.array(target)
+        # Reshaping the input to (n_samples, time_steps, n_feature)
+        # target = np.reshape(target, (target.shape[0], target.shape[1], n_cols))
+        return target
+    for column_name in df.columns:
+        if column_name[0] != "M":
+            continue
+        
+        data = df[column_name]
+        
+        data = np.array(data)
+        data = data.reshape(data.shape[0])
+        # target, feat_dynamic_real, feat_static_cat = data_out
+        # TODO: why is the start date not changing? MIGHT NEED TO FIX
+        target = getTarget(prediction_length * 4, 1, data)
+        feat_static_cat = [i for i in range(len(target))]
+        start =  [pd.Period("01-01-2012", freq=freq) for _ in range(len(target))]
+        ds.extend(ListDataset(
+            [
+                {
+                    FieldName.TARGET: target,
+                    FieldName.START: start,
+                    FieldName.FEAT_STATIC_CAT: [fsc],
+                }
+                for (target, start, fsc) in zip(
+                    target[:, :-prediction_length],
+                    start,
+                    feat_static_cat,
+                )
+            ],
+            freq=freq,
+        ))
+
+    return np.array(ds)
+
+
+def dataSplitSeparateTestVal(df, freq, prediction_length):
+    ds = []
+    offset_map = []
+    ground_truth = [] 
+    
+    def trimData(data):
+        
+        i = 0
+        while data[i] == 0.0 or np.isnan(data[i]):
+            i += 1
+        return data[i:]
+        
+    def getTarget(patch, stride, data_list):
+        
+        target = []
+        # e.g. 125 data patch = 28, then ground_truth is a data of len 90 
+        for i in range(patch, len(data_list), stride):
+            target.append(data_list[i-patch:i])
+            if i + prediction_length <= len(data_list):
+                ground_truth.append(data_list[i : i + prediction_length])
+            
+        # Convert to numpy array
+        target = np.array(target)
+        # Reshaping the input to (n_samples, time_steps, n_feature)
+        # target = np.reshape(target, (target.shape[0], target.shape[1], n_cols))
+        return target
+    
+    for column_name in df.columns:
+        if column_name[0] != "M":
+            continue
+        
+        data = df[column_name]
+        
+        
+        data = np.array(data)
+        data = data.reshape(data.shape[0])
+        data = trimData(data)
+        offset_map.append(len(data))
+        # target, feat_dynamic_real, feat_static_cat = data_out
+        # TODO: why is the start date not changing? MIGHT NEED TO FIX
+        target = getTarget(prediction_length * 4, 1, data)
+        feat_static_cat = [i for i in range(len(target))]
+        start =  [pd.Period("01-01-2011", freq=freq) for _ in range(len(target))]
+        ds.extend(ListDataset(
+            [
+                {
+                    FieldName.TARGET: target,
+                    FieldName.START: start,
+                    FieldName.FEAT_STATIC_CAT: [fsc],
+                }
+                for (target, start, fsc) in zip(
+                    target[:, :-prediction_length],
+                    start,
+                    feat_static_cat,
+                )
+            ],
+            freq=freq,
+        ))
+
+    return np.array(ds), np.array(offset_map), np.array(ground_truth)
 
 
 def create_transformation(freq: str, config: PretrainedConfig) -> Transformation:
