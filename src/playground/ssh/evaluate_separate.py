@@ -73,10 +73,13 @@ print("Min max scaling data...")
 train_scaler_map = scaleDf(df_train)
 test_scaler_map = scaleDf(df_test)
 val_scaler_map = scaleDf(df_val)
-# prediction_length = 14  
+# prediction_length = 7
+prediction_length = 14  
+# prediction_length = 17  
+# prediction_length = 21  
 # prediction_length = 28 # 4 weeks
 # prediction_length = 42 # 6 weeks  
-prediction_length = 56 # 8 weeks  
+# prediction_length = 56 # 8 weeks  
 freq = "1D" # set frequency to 1 day
 
 print("Splitting data into train, val, test...")
@@ -177,9 +180,13 @@ def getInformerConfig(encoder_layers, decoder_layers, d_model):
     
     return config
 
-# BEST_EPOCH = 28 # for 14 
+# BEST_EPOCH = 11 # for 7 
+BEST_EPOCH = 28 # for 14 
+# BEST_EPOCH = 45 # for 17 
+# BEST_EPOCH = 36 # for 21
 # BEST_EPOCH = 35 # for 28
-BEST_EPOCH = 43 # for 42
+# BEST_EPOCH = 43 # for 42
+# BEST_EPOCH = 28 # FOR GAUSSIAN
 BEST_LR = 0.005 
 BEST_WD = 0.0001
 BEST_EL = 16
@@ -337,6 +344,13 @@ def plotKL_Div_between_A_and_B(A, B, save_name, title):
     return KL_div_list
 
 informerA, informerB = getForecastsAndObserved(informer_forecasts_ev)
+
+df_pair = pd.DataFrame({'true': informerA.flatten(), 'pred': informerB.flatten()})
+
+# Step 4: Save the DataFrame to a file (e.g., CSV file)
+df_pair.to_csv('pair.csv', index=False)
+print("flatten complete.")
+
 informer_KL_div_list = plotKL_Div_between_A_and_B(informerA, informerB, "kl_divergence_separate.png", "KL divergence for each forecasts (Informer)")
 from helper import l1_distances, l1_distances_mean
 

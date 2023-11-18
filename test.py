@@ -22,9 +22,22 @@
 
 # 100010
 # 000010 
-binary_str = "1101001"
+# binary_str = "1101001"
 
-# Encode the binary string as an integer
-integer_value = int(binary_str, 2)
-print(integer_value)
-print(type(bin(integer_value)))
+# # Encode the binary string as an integer
+# integer_value = int(binary_str, 2)
+# print(integer_value)
+# print(type(bin(integer_value)))
+import numpy as np
+A = np.array([[1, 2, 3], [1, 7, 3], [-2, 2, 3], [1, 2, 3]])
+B = np.array([[-1, 4, 5], [9, 2, 99], [1, 8, 0], [1, 2, 3]])
+def linf_distances_mean(A, B):
+    
+    res = []
+    for i in range(A.shape[0]):
+        print(A[i] - B[i])
+        res.append(np.linalg.norm((A[i] - B[i]), ord=np.inf))
+    
+    return res 
+
+print(linf_distances_mean(A, B))

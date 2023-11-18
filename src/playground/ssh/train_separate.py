@@ -29,10 +29,14 @@ print("Min max scaling data...")
 train_scaler_map = scaleDf(df_train)
 test_scaler_map = scaleDf(df_test)
 val_scaler_map = scaleDf(df_val)
+# prediction_length = 7  
+# prediction_length = 10  
 # prediction_length = 14  
-prediction_length = 28 # 4 weeks
+prediction_length = 17
+# prediction_length = 21  
+# prediction_length = 28 # 4 weeks
 # prediction_length = 42 # 6 weeks  
-prediction_length = 56 # 8 weeks  
+# prediction_length = 56 # 8 weeks  
 freq = "1D" # set frequency to 1 day
 
 print("Splitting data into train, val, test...")
@@ -77,7 +81,7 @@ train_dataloader = create_dataloader(
     batch_size=256,
     num_batches_per_epoch=100,
 )
-
+    
 val_dataloader1 = create_dataloader(
     "validation",
     False,

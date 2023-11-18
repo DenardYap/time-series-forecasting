@@ -1,22 +1,53 @@
 WEEK 7 UPDATE:
 
+<!--
 1. Got aldous to working and started training. Wasn't able to use too big of a hyperparameter since
-   that doesn't fit into memory
+   that doesn't fit into memory -->
 
-1. https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gaussian_kde.html
-
+<!-- 1. https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gaussian_kde.html -->
 <!-- Remove the outliers -->
 
-Train the new model with no outliers - 2 hours?
-Separate the mean and apply the KL formula (only look at the covariance terms) - 30 mins
-Try l-infinity - 30 mins
+<!-- Train the new model with no outliers -->
+
+<!-- Separate the mean and apply the KL formula (only look at the covariance terms) - 30 mins -->
+<!-- Try l-infinity - 30 mins -->
+
+<!-- 0. Look for bugs in code -->
+
+<!-- 1. Try different prediction length to see where KL Div breaks down -> Try both separating and not separating -->
+
+<!-- 2. Augment data by adding gaussian with very small variance -->
+
+<!-- 3. Find out the smallest positive eigenvalues (e.g. 10), add an identity matrix that has a coef that is much smaller than the eigenvalues -->
+
+<!-- 4. Implement early stopping -->
+
+1. Read more papers
+2. Test out informer's codes! and see if you can get any close to the results
+
+<!-- 1. Before scale/after scale? prediction length -->
+<!-- 1. Use KL Divergence loss - will be very slow, try a smalelr subset -->
+
+Updates Qs:
+
+<!--
+1. Turns out I did have a scaling bug in my code, I fixed it and able to achieve 4 - 5 times lower KL divergence
+
+2. Augmented data by adding gaussian noise of mean 0 and std dev 0.1, should I make them larger?
+
+3. Previously when I was adding gaussian noise to LSTM, I add it as a separate dimension, but for this one we are adding it
+   to the value itself, what's the difference between those two?
+
+4. starts deviating!
+
+5. Adding noise added some improvements, not sure if it matters -->
+
+<!-- Why use l-infinity? -->
 
 <!-- 1. Separate into mean and cov matrices and see which one is contributing to the high loss
 1. Redo separation code -->
    <!-- - Is there a way where I can disconnect and the script keeps running? -->
    <!-- - Is this GPU shared across all people? -->
-
--
 
 <!-- 0. Try jensen shannon -->
 
