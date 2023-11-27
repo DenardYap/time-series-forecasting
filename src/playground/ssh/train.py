@@ -17,7 +17,9 @@ total_start = time.time()
 """
 TODO:
 """
-df_days = pd.read_csv("electric_day.txt", sep=';')
+# df_days = pd.read_csv("electric_day.txt", sep=';')
+df_days = pd.read_csv("electricity_day_clean.csv")
+
 print("Length of dataset", len(df_days))
 # Replace all 0.0s with NaN, this is needed for the observed mask that will be passed into the transformer
 df_days = df_days.replace(0.0, np.nan)
@@ -99,7 +101,8 @@ test_dataloader = create_test_dataloader(
     data=test_dataset,
     batch_size=64,
 )
-
+import torch 
+print("CUDA IS AVAILABLE?:", torch.cuda.is_available())
 
 batch = next(iter(train_dataloader))
 
@@ -213,6 +216,13 @@ best_train_d = None
 best_train_epoch = None
 best_train_loss  = float("infinity")
 
+
+BEST_LR = 0.005072230849104142 
+BEST_WD = 0.0001606068957768057
+BEST_EL = 16
+BEST_DL = 4
+BEST_DIMENSION = 32
+
 best_val_lr = None
 best_val_weight_decay = None
 best_val_el = None  
@@ -226,7 +236,7 @@ parameter_pairs = getParameterPairs(numOfSearch)
 training_start = time.time()
 for lr, weight_decay, el, dl, d in parameter_pairs:
     model = InformerForPrediction(getInformerConfig(el, dl, d))
-    INFORMER_PATH = f"weights/electric/14/informer/{str(lr)}-{str(weight_decay)}-{str(el)}-{str(dl)}-{str(d)}/"
+    INFORMER_PATH = f"weights/electric_clean/14/informer/{str(lr)}-{str(weight_decay)}-{str(el)}-{str(dl)}-{str(d)}/"
 
     model, cur_best_train_score, cur_best_train_epoch, cur_best_val_score, cur_best_val_epoch =\
         train(model, train_dataloader, val_dataloader1, 20, lr, weight_decay, el, dl, d, config, INFORMER_PATH)
@@ -259,7 +269,7 @@ print(f"Out of {numOfSearch} loop, \
     the best validation loss is {best_val_loss} at Epoch {best_val_epoch}, with lr:{best_val_lr} \
         wd:{best_val_weight_decay} el:{best_val_el} dl:{best_val_dl} d:{best_val_d}")
 
-with open("best_results_informer.txt", "a") as f:
+with open("best_results_informer_clean.txt", "a") as f:
     f.write(f"Best training loss is {best_train_loss} at Epoch {best_train_epoch}, with lr:{best_train_lr} \
         wd:{best_train_weight_decay} el:{best_train_el} dl:{best_train_dl} d:{best_train_d}\n")
     f.write(f"Best validation loss is {best_val_loss} at Epoch {best_val_epoch}, with lr:{best_val_lr} \

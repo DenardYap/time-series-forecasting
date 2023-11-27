@@ -58,7 +58,8 @@ import time
 
 total_start = time.time()
 
-df_days = pd.read_csv("electric_day.txt", sep=';')
+# df_days = pd.read_csv("electric_day.txt", sep=';')
+df_days = pd.read_csv("electricity_day_clean.csv")
 print("Length of dataset", len(df_days))
 # Replace all 0.0s with NaN, this is needed for the observed mask that will be passed into the transformer
 df_days = df_days.replace(0.0, np.nan)
@@ -169,23 +170,22 @@ def getInformerConfig(encoder_layers, decoder_layers, d_model):
     
     return config
 
-BEST_EPOCH = 16
-BEST_LR = 0.005072230849104142 
-BEST_WD = 0.0001606068957768057
-BEST_EL = 16
-BEST_DL = 4
-BEST_DIMENSION = 32
+BEST_EPOCH = 15
+BEST_LR = 0.0013974721025626093
+BEST_WD = 0.005139748702619967
+BEST_EL = 32
+BEST_DL = 16
+BEST_DIMENSION = 64
 
-informer_path = f"weights/electric/14/informer/{BEST_LR}-{BEST_WD}-{BEST_EL}-{BEST_DL}-{BEST_DIMENSION}/state/{str(BEST_EPOCH)}"
+informer_path = f"weights/electric_clean/14/informer/{BEST_LR}-{BEST_WD}-{BEST_EL}-{BEST_DL}-{BEST_DIMENSION}/state/{str(BEST_EPOCH)}"
 informer_model = InformerForPrediction(getInformerConfig(BEST_EL, BEST_DL, BEST_DIMENSION))
 informer_model.load_state_dict(torch.load(informer_path))
+# informer_model = InformerForPrediction()
 informer_model.eval()
 
 
 def evaluate(model, data_loader):
     model.eval()
-    
-
     forecasts = []
     for batch in data_loader:
         outputs = model.generate(
@@ -205,7 +205,7 @@ def evaluate(model, data_loader):
     return forecasts
 
 informer_forecasts = evaluate(informer_model, test_dataloader)
-
+print("SHAPE IS:", informer_forecasts.shape)
 # Inverse scale the df back to its original values 
 df_scaled_no_nan = deepcopy(df_scaled)
 i = 0
@@ -232,7 +232,7 @@ test_size = len(df_days) - (train_size +  val_size)
 offset = test_size - prediction_length * 4
 scale_independently(informer_forecasts_ev, offset)
 informer_forecasts_ev[np.isnan(informer_forecasts_ev)] = 0
-
+# (261, 14, 320)
 # Transform test dataset's nan values to 0
 for item_id, ts in enumerate(test_dataset): 
     for i in range(len(ts["target"])):
@@ -246,7 +246,9 @@ from helper import kl_between_two_dist
 
 # TODO: Might have a bug here
 print("Calcualting multivariate KL divergence between forecasted values and observed values...")
-NUM_OF_HOUSES = 370
+NUM_OF_HOUSES = 320
+
+USE_TSMIXER = False
 def getForecastsAndObserved(forecasts):
     A = []
     B = []
@@ -258,20 +260,99 @@ def getForecastsAndObserved(forecasts):
         for i in range(len(cur_df) - prediction_length):
             curList.append(np.array(cur_df[i : i + prediction_length]))        
         A.append(np.array(curList))
-        
-    for i in range(NUM_OF_HOUSES):
-        curList = [] 
-        for j in range(len(cur_df) - prediction_length):
-            curList.append(np.array(forecasts[i * len(cur_df) + j][0]))
-            
-        B.append(np.array(curList))
     
+    if not USE_TSMIXER:
+        for i in range(NUM_OF_HOUSES):
+            curList = [] 
+            for j in range(len(cur_df) - prediction_length):
+                curList.append(np.array(forecasts[i * len(cur_df) + j][0]))
+                
+            B.append(np.array(curList))
+    # else:
+
+    #     import tensorflow as tf
+    #     from tensorflow.keras import layers
+
+
+    #     def res_block(inputs, norm_type, activation, dropout, ff_dim):
+    #         """Residual block of TSMixer."""
+
+    #         norm = (
+    #             layers.LayerNormalization
+    #             if norm_type == 'L'
+    #             else layers.BatchNormalization
+    #         )
+
+    #         # Temporal Linear
+    #         x = norm(axis=[-2, -1])(inputs)
+    #         x = tf.transpose(x, perm=[0, 2, 1])  # [Batch, Channel, Input Length]
+    #         x = layers.Dense(x.shape[-1], activation=activation)(x)
+    #         x = tf.transpose(x, perm=[0, 2, 1])  # [Batch, Input Length, Channel]
+    #         x = layers.Dropout(dropout)(x)
+    #         res = x + inputs
+
+    #         # Feature Linear
+    #         x = norm(axis=[-2, -1])(res)
+    #         x = layers.Dense(ff_dim, activation=activation)(
+    #             x
+    #         )  # [Batch, Input Length, FF_Dim]
+    #         x = layers.Dropout(dropout)(x)
+    #         x = layers.Dense(inputs.shape[-1])(x)  # [Batch, Input Length, Channel]
+    #         x = layers.Dropout(dropout)(x)
+    #         return x + res
+
+
+    #     def build_model(
+    #         input_shape,
+    #         pred_len,
+    #         norm_type,
+    #         activation,
+    #         n_block,
+    #         dropout,
+    #         ff_dim,
+    #         target_slice,
+    #     ):
+    #         """Build TSMixer model."""
+
+    #         inputs = tf.keras.Input(shape=input_shape)
+    #         x = inputs  # [Batch, Input Length, Channel]
+    #         for _ in range(n_block):
+    #             x = res_block(x, norm_type, activation, dropout, ff_dim)
+
+    #         if target_slice:
+    #             x = x[:, :, target_slice]
+
+    #         x = tf.transpose(x, perm=[0, 2, 1])  # [Batch, Channel, Input Length]
+    #         x = layers.Dense(pred_len)(x)  # [Batch, Channel, Output Length]
+    #         outputs = tf.transpose(x, perm=[0, 2, 1])  # [Batch, Output Length, Channel])
+
+    #         return tf.keras.Model(inputs, outputs)
+    #     model = build_model(
+    #         input_shape=(prediction_length * 4, NUM_OF_HOUSES),
+    #         pred_len=prediction_length,
+    #         norm_type="B",
+    #         activation="relu",
+    #         dropout=0.7,
+    #         n_block=4,
+    #         ff_dim=64,
+    #         target_slice= slice(0, None),
+    #     )
+    #     optimizer = tf.keras.optimizers.Adam(learning_rate=0.0001)
+    #     model.compile(optimizer=optimizer, loss='mse', metrics=['mae'])
+    #     model.load_weights("bernard_M_tsmixer_sl56_pl14_lr0.0001_ntB_relu_nb4_dp0.7_fd64_best.index")
+    #     # test_result = model.evaluate(test_data)
+    #     B = model.predict(test_data)
+    #     B = np.transpose(B, (2, 0, 1))
+
     A = np.array(A)
     B = np.array(B)
+    print("SHAPE IS 2:", A.shape, B.shape)
     return A, B
 # Calculate the KL divergences between these two Multivariate gaussian distribution 
 # for every single forecasts (97 forecasts)
    
+
+# (261, 14, 320) -> (320, 261, 14)
 def plotKL_Div_between_A_and_B(A, B, save_name, title):
     KL_div_list = [] 
 
@@ -287,7 +368,7 @@ def plotKL_Div_between_A_and_B(A, B, save_name, title):
     return KL_div_list
 
 informerA, informerB = getForecastsAndObserved(informer_forecasts_ev)
-informer_KL_div_list = plotKL_Div_between_A_and_B(informerA, informerB, "kl_divergence.png", "KL divergence (separating mean)")
+informer_KL_div_list = plotKL_Div_between_A_and_B(informerA, informerB, "kl_divergence_clean.png", "KL divergence (separating mean)")
 from helper import l1_distances, l1_distances_mean
 
 def get_l1_distances_list(A, B):
@@ -300,7 +381,7 @@ def get_l1_distances_list(A, B):
     plt.figure(figsize=(16, 8))
     plt.title("l1 distances")
     plt.plot(l1_distances_list)
-    plt.savefig("l1_distances.png")
+    plt.savefig("l1_distances_clean.png")
     return l1_distances_list
 
 def get_l1_distances_mean_list(A, B):
@@ -310,7 +391,7 @@ def get_l1_distances_mean_list(A, B):
     plt.figure(figsize=(16, 8))
     plt.title("l1 distances mean per 10 houses")
     plt.plot(l1_distances_mean_list)
-    plt.savefig("l1_distances_mean.png")
+    plt.savefig("l1_distances_mean_clean.png")
     return l1_distances_mean_list
 
 
@@ -324,7 +405,7 @@ def get_linf_distances_list(A, B):
     plt.figure(figsize=(16, 8))
     plt.title("linf distances")
     plt.plot(linf_distances_list)
-    plt.savefig("linf_distances.png")
+    plt.savefig("linf_distances_clean.png")
     return linf_distances_list
 
 l1dlinf = get_l1_distances_list(informerA, informerB)
@@ -384,10 +465,10 @@ def calculate(forecasts, dataset):
     return mse_metrics, mase_metrics, smape_metrics, crps_metrics
 
 
-print("Getting scores...")
-mse_metrics4, mase_metrics4, smape_metrics4, crps_metrics4  = calculate(informer_forecasts_ev, test_dataset_ev)  
+print("Getting scores (after preprocessing)")
+mse_metrics4, mase_metrics4, smape_metrics4, crps_metrics4  = calculate(informer_forecasts, test_dataset)  
 
-with open("informer_scores.txt", "a") as f:
+with open("informer_scores_clean.txt", "a") as f:
      
     f.write(f"Informer Test MSE: {np.mean(mse_metrics4)}")
     f.write("===============================================")
@@ -434,9 +515,9 @@ def plot(ts_index, forecasts, save = False):
         label="+/- 1-std",
     )
     if save:
-        if not os.path.exists("graph/electric/14/informer/"):
-            os.makedirs("graph/electric/14/informer/")
-        plt.savefig("graph/electric/14/informer/" + str(ts_index) + "-" + str(int(ts_index) + prediction_length) + ".png")
+        if not os.path.exists("graph/electric_clean/14/informer/"):
+            os.makedirs("graph/electric_clean/14/informer/")
+        plt.savefig("graph/electric_clean/14/informer/" + str(ts_index) + "-" + str(int(ts_index) + prediction_length) + "_clean.png")
     plt.legend()
     plt.show()
 
